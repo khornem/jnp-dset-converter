@@ -41,6 +41,18 @@ class DsetConvert():
         lst = []
         while len(self.conf):
             pdebug(self.conf[0], 5)
+            #detect comments and ignore them
+            match = re.search("^#", self.conf[0])
+            if match:
+                pdebug(" [#] : {}".format(self.conf[0]), 5)
+                self._pop()
+                continue
+            #Ignore comments
+            match = re.search("^/\*", self.conf[0])
+            if match:
+                self._pop()
+                continue
+            #Detect statements with brackets []
             match = re.search("(.+?) \[ (.+?) \];", self.conf[0])
             if match:
                 pdebug(" [[]] : {}".format(self.conf[0]), 5)
@@ -49,12 +61,14 @@ class DsetConvert():
                 values = match.group(2).split(" ")
                 lst.append({ key: values})
                 continue
+            #detect final statements that do not have nested stanzas
             match = re.search("(.+?);", self.conf[0])
             if match:
                 pdebug(" [;] : {}".format(self.conf[0]), 5)
                 lst.append(match.group(1))
                 self._pop()
                 continue
+            # detect a new stanza
             match = re.search("(.+?) {", self.conf[0])
             if match:
                 pdebug(" [cbracket open] : {}".format(self.conf[0]), 5)
@@ -62,20 +76,12 @@ class DsetConvert():
                 key = match.group(1)
                 lst.append({ key: self.convert()})
                 continue
+            #detect the end of a stanza
             match = re.search("}", self.conf[0])
             if match:
                 pdebug(" [cbracket close] : {}".format(self.conf[0]), 5)
                 self._pop()
                 return lst
-            match = re.search("^#", self.conf[0])
-            if match:
-                pdebug(" [#] : {}".format(self.conf[0]), 5)
-                self._pop()
-                continue
-            match = re.search("^/\*", self.conf[0])
-            if match:
-                self._pop()
-                continue
             pdebug("ERROR", 5)
         return lst
 
@@ -104,8 +110,13 @@ class DsetConvert():
             if type(lst[i]) is dict:
                 for key in lst[i]:
                     self.print_prefix("{} {}".format(prefix, key), lst[i][key])
+                    match = re.search("inactive: ", key)
+                    if match:
+                        line = "{} {}".format(prefix, key).replace("inactive: ", "")
+                        line = re.sub(r"^set", "deactivate", line)
+                        print(line)
             else:
-                print("{} {}".format(prefix, lst[i]))
+                print("{} {}".format(prefix, lst[i]).replace("inactive: ", ""))
 
 
 

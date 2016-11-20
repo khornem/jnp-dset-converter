@@ -2,6 +2,8 @@
 
 import re
 import copy
+import sys
+import getopt
 
 
 
@@ -22,7 +24,15 @@ class DsetConvert():
 
     def __init__(self, config):
 
-        self.conf = copy.deepcopy(config)
+        try:
+            with open(config, "r") as fd:
+                self.conf = fd.readlines()
+        except:
+            print("Error")
+            sys.exit(0)            
+        for i in range(len(self.conf)):
+            self.conf[i] = self.conf[i].rstrip().lstrip()
+
         self.dset = { "set": []}
 
 
@@ -30,7 +40,15 @@ class DsetConvert():
     def convert(self):
         lst = []
         while len(self.conf):
-            pdebug(self.conf[0], 11)
+            pdebug(self.conf[0], 5)
+            match = re.search("(.+?) \[ (.+?) \];", self.conf[0])
+            if match:
+                pdebug(" [[]] : {}".format(self.conf[0]), 5)
+                self._pop()
+                key = match.group(1)
+                values = match.group(2).split(" ")
+                lst.append({ key: values})
+                continue
             match = re.search("(.+?);", self.conf[0])
             if match:
                 pdebug(" [;] : {}".format(self.conf[0]), 5)
@@ -44,14 +62,6 @@ class DsetConvert():
                 key = match.group(1)
                 lst.append({ key: self.convert()})
                 continue
-            match = re.search("(.+?) \[ (.+?) \];", self.conf[0])
-            if match:
-                pdebug(" [[]] : {}".format(self.conf[0]), 5)
-                self._pop()
-                key = match.group(1)
-                values = match.group(2).split(" ")
-                lst.append({ key: values})
-                continue
             match = re.search("}", self.conf[0])
             if match:
                 pdebug(" [cbracket close] : {}".format(self.conf[0]), 5)
@@ -62,6 +72,11 @@ class DsetConvert():
                 pdebug(" [#] : {}".format(self.conf[0]), 5)
                 self._pop()
                 continue
+            match = re.search("^/\*", self.conf[0])
+            if match:
+                self._pop()
+                continue
+            pdebug("ERROR", 5)
         return lst
 
 
@@ -80,7 +95,7 @@ class DsetConvert():
 
     def translate(self):
         self.dset["set"] = self.convert()
-        print(self.dset)
+        #print(self.dset)
 
 
 
@@ -96,19 +111,28 @@ class DsetConvert():
 
 
 
+def _info():
+    print("info")
 
 
 
 
 
+def main(argv):
 
-def main():
-    with open("R8.cfg", "r") as fd:
-        config = fd.readlines()
-    for i in range(len(config)):
-        config[i] = config[i].rstrip().lstrip()
-        print(config[i])
-    dset = DsetConvert(config)
+    try:
+        opts, args = getopt.getopt(argv, "hi:", ["input-config"])
+    except getopt.GetoptError:
+        _info()
+        sys.exist(2)
+
+    for opt, arg in opts:
+        if opt == '-h':
+            _info()
+            sys.exit(0)
+        elif opt in ("-i", "--input-config"):
+            dset = DsetConvert(arg)
+
     dset.translate()
     dset.print_prefix("set", dset.dset["set"])
     #dset.translate()
@@ -125,5 +149,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
 

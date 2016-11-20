@@ -1,19 +1,18 @@
 #!/usr/bin/python3
+'''
+Author:    Miguel Gonzalez
+Version:   1.0
+Date:      20/11/2016
+'''
+
 
 import re
-import copy
 import sys
 import getopt
 
 
-
-ocbracket = '{'
-ccbracket = '}'
-obracket = '['
-cbracket = ']'
-scolon = ';'
-
 DEBUG = 0
+
 
 def pdebug(msg, level):
     if DEBUG > level:
@@ -21,47 +20,51 @@ def pdebug(msg, level):
 
 
 class DsetConvert():
+    ''' Class used to translate a configuration to display set format.
+It converts configuration to a python data structure based of lists and dictionaries.
+Then it prints the configuration in display set format 
+    '''
 
     def __init__(self, config):
+        ''' Initialize class with the config file'''
 
         try:
             with open(config, "r") as fd:
                 self.conf = fd.readlines()
         except:
-            print("Error")
-            sys.exit(0)            
+            print("Error: file {} does not exists".format(config))
+            sys.exit(0)
         for i in range(len(self.conf)):
             self.conf[i] = self.conf[i].rstrip().lstrip()
 
-        self.dset = { "set": []}
-
-
+        self.dset = {"set": []}
 
     def convert(self):
+        ''' recurrent method to translate configuration to python data structure'''
         lst = []
         while len(self.conf):
             pdebug(self.conf[0], 5)
-            #detect comments and ignore them
+            # detect comments and ignore them
             match = re.search("^#", self.conf[0])
             if match:
                 pdebug(" [#] : {}".format(self.conf[0]), 5)
                 self._pop()
                 continue
-            #Ignore comments
+            # Ignore comments
             match = re.search("^/\*", self.conf[0])
             if match:
                 self._pop()
                 continue
-            #Detect statements with brackets []
+            # Detect statements with brackets []
             match = re.search("(.+?) \[ (.+?) \];", self.conf[0])
             if match:
                 pdebug(" [[]] : {}".format(self.conf[0]), 5)
                 self._pop()
                 key = match.group(1)
                 values = match.group(2).split(" ")
-                lst.append({ key: values})
+                lst.append({key: values})
                 continue
-            #detect final statements that do not have nested stanzas
+            # detect final statements that do not have nested stanzas
             match = re.search("(.+?);", self.conf[0])
             if match:
                 pdebug(" [;] : {}".format(self.conf[0]), 5)
@@ -74,9 +77,9 @@ class DsetConvert():
                 pdebug(" [cbracket open] : {}".format(self.conf[0]), 5)
                 self._pop()
                 key = match.group(1)
-                lst.append({ key: self.convert()})
+                lst.append({key: self.convert()})
                 continue
-            #detect the end of a stanza
+            # detect the end of a stanza
             match = re.search("}", self.conf[0])
             if match:
                 pdebug(" [cbracket close] : {}".format(self.conf[0]), 5)
@@ -85,48 +88,33 @@ class DsetConvert():
             pdebug("ERROR", 5)
         return lst
 
-
-
     def _pop(self):
+        '''Pop first line of the current configuration'''
         self.conf = self.conf[1:]
 
-
-    def print_dset(self):
-        for key in self.dset:
-            print(key)
-            print(self.dset[key])
-            for i in range(len(self.dset[key])):
-                print(self.dset[key][i])
-
-
     def translate(self):
+        '''Invoke convert method to translate configuration'''
         self.dset["set"] = self.convert()
-        #print(self.dset)
-
-
+        # print(self.dset)
 
     def print_prefix(self, prefix, lst):
+        '''Recurrent method used to print configuration in display set format'''
         for i in range(len(lst)):
             if type(lst[i]) is dict:
                 for key in lst[i]:
                     self.print_prefix("{} {}".format(prefix, key), lst[i][key])
                     match = re.search("inactive: ", key)
                     if match:
-                        line = "{} {}".format(prefix, key).replace("inactive: ", "")
+                        line = "{} {}".format(
+                            prefix, key).replace("inactive: ", "")
                         line = re.sub(r"^set", "deactivate", line)
                         print(line)
             else:
                 print("{} {}".format(prefix, lst[i]).replace("inactive: ", ""))
 
 
-
-
-
 def _info():
-    print("info")
-
-
-
+    print("Usage: jnp2dset.py -i <config-file>")
 
 
 def main(argv):
@@ -146,19 +134,7 @@ def main(argv):
 
     dset.translate()
     dset.print_prefix("set", dset.dset["set"])
-    #dset.translate()
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-

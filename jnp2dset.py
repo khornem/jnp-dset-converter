@@ -80,6 +80,17 @@ class DsetConvert():
 
     def translate(self):
         self.dset["set"] = self.convert()
+        print(self.dset)
+
+
+
+    def print_prefix(self, prefix, lst):
+        for i in range(len(lst)):
+            if type(lst[i]) is dict:
+                for key in lst[i]:
+                    self.print_prefix("{} {}".format(prefix, key), lst[i][key])
+            else:
+                print("{} {}".format(prefix, lst[i]))
 
 
 
@@ -98,9 +109,8 @@ def main():
         config[i] = config[i].rstrip().lstrip()
         print(config[i])
     dset = DsetConvert(config)
-    print("************")
-    #print(dset.dset)
-    print(dset.convert())
+    dset.translate()
+    dset.print_prefix("set", dset.dset["set"])
     #dset.translate()
 
 

@@ -25,15 +25,22 @@ It converts configuration to a python data structure based of lists and dictiona
 Then it prints the configuration in display set format 
     '''
 
-    def __init__(self, config):
-        ''' Initialize class with the config file'''
+    def __init__(self, config=None):
+        ''' Initialize class with the config file. If no config file is provided it reads from stdin'''
 
-        try:
-            with open(config, "r") as fd:
-                self.conf = fd.readlines()
-        except:
-            print("Error: file {} does not exists".format(config))
-            sys.exit(0)
+        if config:
+            try:
+                with open(config, "r") as fd:
+                    self.conf = fd.readlines()
+            except:
+                print("Error: file {} does not exists".format(config))
+                sys.exit(0)
+        else:
+            try:
+                self.conf = sys.stdin.readlines()
+            except:
+                print("error reading from standard input")
+
         for i in range(len(self.conf)):
             self.conf[i] = self.conf[i].rstrip().lstrip()
 
@@ -114,8 +121,9 @@ Then it prints the configuration in display set format
 
 
 def _info():
-    print("Usage: jnp2dset.py -i <config-file>")
-
+    print("""Usage: jnp2dset.py -i <config-file>
+                    jnp2dset.py: enter configuration and then ctrl+d or pipe configuration
+                                 to jnp2set""")
 
 def main(argv):
 
@@ -130,7 +138,10 @@ def main(argv):
             _info()
             sys.exit(0)
         elif opt in ("-i", "--input-config"):
-            dset = DsetConvert(arg)
+            dset = DsetConvert(config=arg)
+    #read from stdin
+    if not len(opts):
+        dset = DsetConvert()
 
     dset.translate()
     dset.print_prefix("set", dset.dset["set"])

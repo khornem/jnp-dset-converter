@@ -92,6 +92,13 @@ Then it prints the configuration in display set format
                 pdebug(" [cbracket close] : {}".format(self.conf[0]), 5)
                 self._pop()
                 return lst
+            #If the scripts reaches this point line has not matches against any rule
+            #so there is an error. Print line with problem and skip it
+            print("################################################")
+            print("### ERROR line: {}".format(self.conf[0]))
+            print("### Skip line and continue")
+            print("################################################")
+            self._pop()
             pdebug("ERROR", 5)
         return lst
 

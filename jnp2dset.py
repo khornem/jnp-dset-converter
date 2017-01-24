@@ -72,7 +72,7 @@ Then it prints the configuration in display set format
                 lst.append({key: values})
                 continue
             # detect final statements that do not have nested stanzas
-            match = re.search("(.+?);", self.conf[0])
+            match = re.search("(.+?);$", self.conf[0])
             if match:
                 pdebug(" [;] : {}".format(self.conf[0]), 5)
                 lst.append(match.group(1))

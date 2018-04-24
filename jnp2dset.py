@@ -126,7 +126,16 @@ Then it prints the configuration in display set format
                         line = re.sub(r"^set", "deactivate", line)
                         print(line)
             else:
-                print("{} {}".format(prefix, lst[i]).replace("inactive: ", ""))
+                match = re.search("inactive: ", lst[i])
+                if match:
+                    line = "{} {}".format(prefix, lst[i]).replace("inactive: ", "")
+                    # print line in set format
+                    print(line)
+                    line = re.sub(r"^set", "deactivate", line)
+                    # deactivate previous line
+                    print(line)
+                else:
+                    print("{} {}".format(prefix, lst[i]).replace("inactive: ", ""))
 
 
 def _info():

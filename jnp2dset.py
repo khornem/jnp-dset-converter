@@ -9,6 +9,8 @@ Date:      20/11/2016
 import re
 import sys
 import getopt
+import logging
+logger = logging.getLogger(__name__)
 
 
 DEBUG = 0
@@ -50,11 +52,11 @@ Then it prints the configuration in display set format
         ''' recurrent method to translate configuration to python data structure'''
         lst = []
         while len(self.conf):
-            pdebug(self.conf[0], 5)
+            logger.debug(self.conf[0])
             # detect comments and ignore them
             match = re.search("^#", self.conf[0])
             if match:
-                pdebug(" [#] : {}".format(self.conf[0]), 5)
+                logger.debug(" [#] : {}".format(self.conf[0]))
                 self._pop()
                 continue
             # Ignore comments
@@ -65,23 +67,23 @@ Then it prints the configuration in display set format
             # Detect statements with brackets []
             match = re.search("(.+?) \[ (.+?) \];", self.conf[0])
             if match:
-                pdebug(" [[]] : {}".format(self.conf[0]), 5)
+                logger.debug(" [[]] : {}".format(self.conf[0]))
                 self._pop()
                 key = match.group(1)
                 values = match.group(2).split(" ")
                 lst.append({key: values})
                 continue
             # detect final statements that do not have nested stanzas
-            match = re.search("(.+?);$", self.conf[0])
+            match = re.search("(.+?);( ## SECRET-DATA){0,1}$", self.conf[0])
             if match:
-                pdebug(" [;] : {}".format(self.conf[0]), 5)
+                logger.debug(" [;] : {}".format(self.conf[0]))
                 lst.append(match.group(1))
                 self._pop()
                 continue
             # detect a new stanza
             match = re.search("(.+?) {", self.conf[0])
             if match:
-                pdebug(" [cbracket open] : {}".format(self.conf[0]), 5)
+                logger.debug(" [cbracket open] : {}".format(self.conf[0]))
                 self._pop()
                 key = match.group(1)
                 lst.append({key: self.convert()})
@@ -89,7 +91,7 @@ Then it prints the configuration in display set format
             # detect the end of a stanza
             match = re.search("}", self.conf[0])
             if match:
-                pdebug(" [cbracket close] : {}".format(self.conf[0]), 5)
+                logger.debug(" [cbracket close] : {}".format(self.conf[0]))
                 self._pop()
                 return lst
             #If the scripts reaches this point line has not matches against any rule
@@ -99,7 +101,7 @@ Then it prints the configuration in display set format
             print("### Skip line and continue")
             print("################################################")
             self._pop()
-            pdebug("ERROR", 5)
+            logger.debug("ERROR")
         return lst
 
     def _pop(self):
@@ -135,17 +137,28 @@ def _info():
 def main(argv):
 
     try:
-        opts, args = getopt.getopt(argv, "hi:", ["input-config"])
+        opts, args = getopt.getopt(argv, "hi:v", ["input-config"])
     except getopt.GetoptError:
         _info()
         sys.exist(2)
-
+    debug_level = logging.INFO
     for opt, arg in opts:
         if opt == '-h':
             _info()
             sys.exit(0)
         elif opt in ("-i", "--input-config"):
             dset = DsetConvert(config=arg)
+        elif opt == '-v':
+            debug_level = logging.DEBUG
+
+
+    logging.basicConfig(level=debug_level,
+                        format='%(asctime)s '
+                            '%(filename)s: '    
+                            '%(levelname)s: '
+                            '%(funcName)s(): '
+                            '%(lineno)d:\t'
+                            '%(message)s')
     #read from stdin
     if not len(opts):
         dset = DsetConvert()
